@@ -1,8 +1,11 @@
+<<<<<<< HEAD
 assets/external/
 *.py[cod]
 .states
 *.db
 .web
+=======
+>>>>>>> 581f437eedebbb163b80ccc1ffaf692daac391fb
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -187,9 +190,15 @@ cython_debug/
 .abstra/
 
 # Visual Studio Code
+<<<<<<< HEAD
 #  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore
 #  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
 #  and can be added to the global gitignore or merged into this file. However, if you prefer,
+=======
+#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
+#  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
+#  and can be added to the global gitignore or merged into this file. However, if you prefer, 
+>>>>>>> 581f437eedebbb163b80ccc1ffaf692daac391fb
 #  you could uncomment the following to ignore the entire vscode folder
 # .vscode/
 
