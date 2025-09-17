@@ -21,12 +21,12 @@ CREATE TABLE Location (
 
 -- ROOM
 CREATE TABLE Room (
-    RoomID INT PRIMARY KEY,
+    RoomID INT AUTO_INCREMENT PRIMARY KEY,
     HostID INT,
     TypeID INT,
     LocalID INT,
-    Name VARCHAR(255),
-    Price DECIMAL(10,2),
+    Name VARCHAR(500),
+    Price DECIMAL(12,2),
     MinimumNights INT,
     Availability INT,
     Coordinates VARCHAR(255),

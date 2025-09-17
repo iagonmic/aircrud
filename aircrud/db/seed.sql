@@ -1,10 +1,8 @@
 -- HOST
 INSERT INTO Host (HostID, RoomsRent)
-SELECT `Host ID`, AVG(`Rooms rent by the host`)
+SELECT `Host ID`, SUM(`Rooms rent by the host`)
 FROM air_bnb_listings
 GROUP BY `Host ID`;
-
-# Conferir com ALEX se vai usar AVG, MAX ou outra coisa e continuar populando a partir de Room (incluso), após rodar Host
 
 -- RoomType
 INSERT INTO RoomType (Name)
@@ -17,9 +15,8 @@ SELECT DISTINCT Country, City, Neighbourhood
 FROM air_bnb_listings;
 
 -- Room
-INSERT INTO Room (RoomID, HostID, TypeID, LocalID, Name, Price, MinimumNights, Availability, Coordinates)
+INSERT INTO Room (HostID, TypeID, LocalID, Name, Price, MinimumNights, Availability, Coordinates)
 SELECT 
-    l.`Room ID`,
     l.`Host ID`,
     rt.TypeID,
     loc.LocalID,
@@ -37,17 +34,15 @@ JOIN Location loc ON l.Country = loc.Country
 -- Review
 INSERT INTO Review (RoomID, NumberOfReviews, LastReviewDate, ReviewsPerMonth)
 SELECT 
-    `Room ID`,
-    `Number of reviews`,
-    `Date last review`,
-    `Number of reviews per month`
-FROM air_bnb_listings;
+    r.RoomID,
+    l.`Number of reviews`,
+    l.`Date last review`,
+    l.`Number of reviews per month`
+FROM air_bnb_listings l
+JOIN Room r on r.Coordinates = l.Coordinates;
 
 -- UpdateRoom
 INSERT INTO UpdateRoom (RoomID, UpdateDate)
-SELECT `Room ID`, `Updated Date`
-FROM air_bnb_listings;
-
-
-select abl.`Host ID`, abl.`Rooms rent by the host` from air_bnb_listings abl 
-where abl.`Host ID` = '10003042'
+SELECT r.RoomID, l.`Updated Date`
+FROM air_bnb_listings l
+JOIN Room r on r.Coordinates = l.Coordinates;
