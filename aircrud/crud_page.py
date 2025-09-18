@@ -27,17 +27,11 @@ def crud_page():
         rx.heading("CRUD Dinâmico"),
         rx.button("Carregar dados", on_click=CrudState.load_data),
         rx.data_list.root(
-            *[
+            rx.foreach(
                 rx.data_list.item(
-                    rx.data_list.label(f"{item['HostID']}: {item['Hostname']}"),
-                    rx.button("Editar", on_click=lambda _, id=item['HostID']: CrudState.edit_record(id, {"Hostname": "NovoNome"})),
-                    rx.button("Deletar", on_click=lambda _, id=item['HostID']: CrudState.remove_record(id)),
-                ) for item in CrudState.data
-            ],
-            spacing="4",
-            width="100%",
-            max_height="400px",
-            overflow_y="auto",
+                    rx.data_list.label(rx.text(f))
+                )
+            )
         )
     )
 

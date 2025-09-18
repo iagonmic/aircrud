@@ -7,9 +7,9 @@ engine = create_engine("mysql+pymysql://root:" + os.getenv("password") + "@127.0
 metadata = MetaData()
 metadata.reflect(bind=engine)
 
-def get_available_tables():
-    for table in metadata.tables:
-        yield table
+def get_available_table_names():
+    for table in metadata.sorted_tables:
+        yield table.fullname
 
 def create_record(table, data: dict):
     stmt = insert(table).values(**data)
@@ -45,6 +45,8 @@ def query_builder(table, filters=None, order_by=None, group_by=None,
         else:
             stmt = stmt.order_by(getattr(table.c, order_by))
 
+    # exemplo: host_results = query_table("host", order_by=['RoomsRent'])
+
     # Paginação
     stmt = stmt.offset((page - 1) * page_size).limit(page_size)
 
@@ -67,10 +69,9 @@ def delete_record(table, record_id, pk="id"):
     with engine.begin() as conn:
         result = conn.execute(stmt)
         return result.rowcount
-
-def get_table_by_name(name):
-    return Table(name, metadata, autoload_with=engine)
-
-def query_table(name, **kwargs):
-    table = get_table_by_name(name)
-    return query_builder(table, **kwargs)
+    
+def get_table_info(table_name, **kwargs):
+    for table in metadata.sorted_tables:
+        if table.fullname == table_name:
+            return query_builder(table, **kwargs)
+    print("Tabela não encontrada")
