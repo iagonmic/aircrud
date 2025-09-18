@@ -54,7 +54,8 @@ def query_builder(table, filters=None, order_by=None, group_by=None,
         result = conn.execute(stmt)
         return [dict(row) for row in result.mappings().all()]
     
-def update_record(table, record_id, data: dict, pk="id"):
+def update_record(table, record_id, data: dict):
+    pk = get_pk_column_name(table)
     stmt = (
         update(table)
         .where(getattr(table.c, pk) == record_id)
@@ -64,14 +65,25 @@ def update_record(table, record_id, data: dict, pk="id"):
         result = conn.execute(stmt)
         return result.rowcount  # número de linhas afetadas
     
-def delete_record(table, record_id, pk="id"):
+def delete_record(table, record_id):
+    pk = get_pk_column_name(table)
     stmt = delete(table).where(getattr(table.c, pk) == record_id)
     with engine.begin() as conn:
         result = conn.execute(stmt)
         return result.rowcount
     
 def get_table_info(table_name, **kwargs):
+    table = get_table_by_name(table_name)
+    if table:
+        return query_builder(table, **kwargs)
+    print("Tabela não encontrada")
+
+def get_table_by_name(table_name):
     for table in metadata.sorted_tables:
         if table.fullname == table_name:
-            return query_builder(table, **kwargs)
-    print("Tabela não encontrada")
+            return table
+    return None
+
+def get_pk_column_name(table):
+    return table.primary_key.columns.keys()[0]
+    
