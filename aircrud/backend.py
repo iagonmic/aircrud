@@ -5,8 +5,11 @@ from sqlalchemy import create_engine, MetaData, Table, func, select, insert, upd
 load_dotenv()
 engine = create_engine("mysql+pymysql://root:" + os.getenv("password") + "@127.0.0.1/aircrud")
 metadata = MetaData()
+metadata.reflect(bind=engine)
 
-host = Table("host", metadata, autoload_with=engine)
+def get_available_tables():
+    for table in metadata.tables:
+        yield table
 
 def create_record(table, data: dict):
     stmt = insert(table).values(**data)
@@ -46,7 +49,8 @@ def query_builder(table, filters=None, order_by=None, group_by=None,
     stmt = stmt.offset((page - 1) * page_size).limit(page_size)
 
     with engine.connect() as conn:
-        return conn.execute(stmt).fetchall()
+        result = conn.execute(stmt)
+        return [dict(row) for row in result.mappings().all()]
     
 def update_record(table, record_id, data: dict, pk="id"):
     stmt = (
@@ -64,3 +68,9 @@ def delete_record(table, record_id, pk="id"):
         result = conn.execute(stmt)
         return result.rowcount
 
+def get_table_by_name(name):
+    return Table(name, metadata, autoload_with=engine)
+
+def query_table(name, **kwargs):
+    table = get_table_by_name(name)
+    return query_builder(table, **kwargs)

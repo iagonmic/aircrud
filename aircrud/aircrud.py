@@ -1,6 +1,7 @@
 import reflex as rx
-from aircrud.pages.crud_page import crud_page
 from rxconfig import config
+from aircrud.crud_page import crud_page
+
 class MapContainer(rx.NoSSRComponent):
     library = "react-leaflet"
     tag = "MapContainer"
