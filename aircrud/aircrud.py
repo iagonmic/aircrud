@@ -1,136 +1,77 @@
 import reflex as rx
+from aircrud.pages.crud_page import crud_page
 from rxconfig import config
-
-class State(rx.State):
-    pass
-
 class MapContainer(rx.NoSSRComponent):
-
     library = "react-leaflet"
-
     tag = "MapContainer"
-
     center: rx.Var[list]
-
     zoom: rx.Var[int]
-
     scroll_wheel_zoom: rx.Var[bool]
 
-    # Can also pass a url like: https://unpkg.com/leaflet/dist/leaflet.css
     def add_imports(self):
         return {"": ["leaflet/dist/leaflet.css"]}
 
 
 class TileLayer(rx.NoSSRComponent):
-
     library = "react-leaflet"
-
     tag = "TileLayer"
-
     url: rx.Var[str]
 
 
 map_container = MapContainer.create
 tile_layer = TileLayer.create
 
+
 def index() -> rx.Component:
     return rx.el.div(
-        # --- MAPA ---
         map_container(
             tile_layer(
                 url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
             ),
             center=[51.505, -0.09],
             zoom=5,
+            scroll_wheel_zoom=False,
             width="100%",
-            height="100vh",
+            height="100%",
+            style={"position": "absolute", "top": 0, "left": 0, "zIndex": 0},
         ),
-
-        # --- CARD CENTRAL ---
         rx.el.div(
-            rx.text("Bem-vindo ao AirCRUD!", font_size="2em", color="white"),
-            rx.button(
-                "Clique aqui para iniciar",
-                on_click=rx.redirect("/quiz"),
-                bg="#FF5A60",
-                color="white",
-                _hover={"bg": "#CC484C"},
-                padding="1em 2em",
-                margin_top="1em",
-                size="4",
-                variant="surface",
-                _focus={"boxShadow": "none"}, 
-                border_radius="0.5em",
+            rx.el.h2(
+                "Bem-vindo ao AirCRUD!", class_name="text-4xl text-white font-bold"
             ),
-            position="absolute",
-            top="50%",
-            left="50%",
-            transform="translate(-50%, -50%)",
-            bg="rgba(0, 0, 0, 0.6)",
-            padding="2em",
-            border_radius="1em",
-            box_shadow="lg",
-            z_index=1001,
-            text_align="center",
+            rx.el.button(
+                "Clique aqui para iniciar",
+                on_click=rx.redirect("/crud"),
+                class_name="mt-4 py-4 px-8 bg-[#FF5A60] text-white rounded-lg hover:bg-[#CC484C] focus:outline-none focus:shadow-none",
+            ),
+            class_name="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 p-8 rounded-2xl shadow-lg text-center z-[1001]",
         ),
-
-        # --- BORDA SUPERIOR ---
         rx.el.div(
-            position="absolute",
-            top="0",
-            left="0",
-            right="0",
-            height="120px",
-            pointer_events="none",
-            z_index=1000,
-            bg="linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0))",
-            #backdrop_filter="blur(10px)",
+            class_name="absolute top-0 left-0 right-0 h-[120px] pointer-events-none bg-gradient-to-b from-black/40 to-transparent z-[1000]"
         ),
-
-        # --- BORDA INFERIOR ---
         rx.el.div(
-            position="absolute",
-            bottom="0",
-            left="0",
-            right="0",
-            height="120px",
-            pointer_events="none",
-            z_index=1000,
-            bg="linear-gradient(to top, rgba(0,0,0,0.4), rgba(0,0,0,0))",
-            #backdrop_filter="blur(10px)",
+            class_name="absolute bottom-0 left-0 right-0 h-[120px] pointer-events-none bg-gradient-to-t from-black/40 to-transparent z-[1000]"
         ),
-
-        # --- BORDA ESQUERDA ---
         rx.el.div(
-            position="absolute",
-            top="0",
-            bottom="0",
-            left="0",
-            width="120px",
-            pointer_events="none",
-            z_index=1000,
-            bg="linear-gradient(to right, rgba(0,0,0,0.4), rgba(0,0,0,0))",
-            #backdrop_filter="blur(10px)",
+            class_name="absolute top-0 bottom-0 left-0 w-[120px] pointer-events-none bg-gradient-to-r from-black/40 to-transparent z-[1000]"
         ),
-
-        # --- BORDA DIREITA ---
         rx.el.div(
-            position="absolute",
-            top="0",
-            bottom="0",
-            right="0",
-            width="120px",
-            pointer_events="none",
-            z_index=1000,
-            bg="linear-gradient(to left, rgba(0,0,0,0.4), rgba(0,0,0,0))",
-            #backdrop_filter="blur(10px)",
+            class_name="absolute top-0 bottom-0 right-0 w-[120px] pointer-events-none bg-gradient-to-l from-black/40 to-transparent z-[1000]"
         ),
-
-        # --- ESTILO DO CONTAINER GERAL ---
-        style={"height": "100vh", "width": "100vw", "position": "relative"},
+        class_name="h-screen w-screen relative font-['Inter']",
     )
 
 
-    
-app = rx.App()
-app.add_page(index)
+app = rx.App(
+    theme=rx.theme(appearance="light"),
+    head_components=[
+        rx.el.link(rel="preconnect", href="https://fonts.googleapis.com"),
+        rx.el.link(rel="preconnect", href="https://fonts.gstatic.com", crossorigin=""),
+        rx.el.link(
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap",
+            rel="stylesheet",
+        ),
+    ],
+)
+app.add_page(index, route="/")
+app.add_page(crud_page, route="/crud")
