@@ -1,12 +1,19 @@
 from dotenv import load_dotenv
 import os
-from sqlalchemy import create_engine, MetaData, Table, func, select
+from sqlalchemy import create_engine, MetaData, Table, func, select, insert, update, delete
 
 load_dotenv()
 engine = create_engine("mysql+pymysql://root:" + os.getenv("password") + "@127.0.0.1/aircrud")
 metadata = MetaData()
 
 host = Table("host", metadata, autoload_with=engine)
+
+def create_record(table, data: dict):
+    stmt = insert(table).values(**data)
+    with engine.begin() as conn:  # begin = abre transação automática
+        result = conn.execute(stmt)
+        return result.inserted_primary_key
+
 
 def query_builder(table, filters=None, order_by=None, group_by=None,
                   page: int = 1, page_size: int = 10, aggregates=None):
@@ -40,3 +47,20 @@ def query_builder(table, filters=None, order_by=None, group_by=None,
 
     with engine.connect() as conn:
         return conn.execute(stmt).fetchall()
+    
+def update_record(table, record_id, data: dict, pk="id"):
+    stmt = (
+        update(table)
+        .where(getattr(table.c, pk) == record_id)
+        .values(**data)
+    )
+    with engine.begin() as conn:
+        result = conn.execute(stmt)
+        return result.rowcount  # número de linhas afetadas
+    
+def delete_record(table, record_id, pk="id"):
+    stmt = delete(table).where(getattr(table.c, pk) == record_id)
+    with engine.begin() as conn:
+        result = conn.execute(stmt)
+        return result.rowcount
+
