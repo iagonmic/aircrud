@@ -1,5 +1,5 @@
 import reflex as rx
-from aircrud.backend import get_available_table_names, get_table_by_name, get_table_info, create_record, update_record, delete_record
+from aircrud.backend import get_available_table_names, get_table_by_name, get_table_info, create_record, update_record, delete_record, get_non_pk_fk_columns
 
 class CrudState(rx.State):
     data: list[dict] = []
@@ -11,6 +11,9 @@ class CrudState(rx.State):
     filter_operator: str = ""
     order_column: str = ""
     order_direction: str = ""
+    insert_data: dict = {}
+    show_insert_popup: bool = False
+    form_columns: list[str] = []
 
     @rx.event
     def change_table(self, table: str):
@@ -21,7 +24,26 @@ class CrudState(rx.State):
         self.order_column: str = ""
         self.order_direction: str = ""
         self.filter_operator: str = ""
+        self.insert_data: dict = {}
+        self.show_insert_popup: bool = False
+        self.prepare_form()
 
+    @rx.event
+    def prepare_form(self):
+        """Atualiza as colunas do formulário com base na tabela atual."""
+        self.form_columns = get_non_pk_fk_columns(self.table)
+
+    @rx.event
+    def toggle_insert_popup(self):
+        self.show_insert_popup = not self.show_insert_popup
+
+    @rx.event
+    def handle_insert(self, form_data: dict):
+        """Recebe dados do form e insere no banco."""
+        self.insert_data = form_data
+        create_record(get_table_by_name(self.table), form_data)  
+        self.load_data()  # recarrega tabela após inserir
+        self.show_insert_popup = False
 
     @rx.event
     def set_page_number(self, page: str):
@@ -84,12 +106,6 @@ class CrudState(rx.State):
         )
         self.data = [dict(r) for r in rows]
 
-
-    async def add_record(self, data: dict):
-        table = get_table_by_name(self.table)
-        create_record(table, data)
-        await self.load_data()
-
     async def edit_record(self, record_id: int, data: dict):
         table = get_table_by_name(self.table)
         update_record(table, record_id, data)
@@ -99,6 +115,22 @@ class CrudState(rx.State):
         table = get_table_by_name(self.table)
         delete_record(table, record_id)
         await self.load_data()
+
+def insert_form():
+    return rx.form(
+        rx.vstack(
+            rx.foreach(
+                CrudState.form_columns,
+                lambda col: rx.input(
+                    placeholder=col,
+                    name=col
+                )
+            ),
+            rx.button("Inserir Dados", type="submit")
+        ),
+        on_submit=CrudState.handle_insert,
+        reset_on_submit=True,
+    )
     
 def crud_table():
     return rx.table.root(
@@ -208,6 +240,21 @@ def crud_page():
                     CrudState.load_data()
                 ]
             ),
+        ),
+        # inserir dados
+        rx.button(
+            "Inserir Registro",
+            on_click=CrudState.toggle_insert_popup,
+        ),
+        rx.dialog.root(
+            rx.dialog.trigger(rx.text("")),
+            rx.dialog.content(
+                rx.dialog.title("Inserir Novo Registro"),
+                insert_form(),
+                rx.dialog.close(rx.button("Fechar")),
+            ),
+            open=CrudState.show_insert_popup,
+            on_open_change=CrudState.toggle_insert_popup,
         ),
         # tabela com dados
         crud_table()

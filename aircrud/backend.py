@@ -116,3 +116,7 @@ def get_table_by_name(table_name):
 def get_pk_column_name(table):
     return table.primary_key.columns.keys()[0]
     
+
+def get_non_pk_fk_columns(table_name: str) -> list[str]:
+    table = get_table_by_name(table_name)
+    return [col.name for col in table.columns if not col.primary_key and not col.foreign_keys]
