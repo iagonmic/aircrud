@@ -1,6 +1,7 @@
 import reflex as rx
-from aircrud.pages.crud_page import crud_page
 from rxconfig import config
+from aircrud.crud_page import crud_page, CrudState
+
 class MapContainer(rx.NoSSRComponent):
     library = "react-leaflet"
     tag = "MapContainer"
@@ -74,4 +75,4 @@ app = rx.App(
     ],
 )
 app.add_page(index, route="/")
-app.add_page(crud_page, route="/crud")
+app.add_page(crud_page, route="/crud", on_load=CrudState.load_data())
