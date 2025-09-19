@@ -74,7 +74,7 @@ def delete_record(table, record_id):
     
 def get_table_info(table_name, **kwargs):
     table = get_table_by_name(table_name)
-    if table:
+    if table is not None:
         return query_builder(table, **kwargs)
     print("Tabela não encontrada")
 
