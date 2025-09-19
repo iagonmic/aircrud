@@ -6,11 +6,22 @@ class CrudState(rx.State):
     page: int = 1
     page_size: int = 10
     table: str = "host"
+    filter_column = ""
+    filter_value = ""
+    filter_operator: str = ""
+    order_column: str = ""
+    order_direction: str = ""
 
     @rx.event
     def change_table(self, table: str):
         """Change the select table var."""
         self.table = table
+        self.filter_column = ""
+        self.filter_value = ""
+        self.order_column: str = ""
+        self.order_direction: str = ""
+        self.filter_operator: str = ""
+
 
     @rx.event
     def set_page_number(self, page: str):
@@ -24,6 +35,26 @@ class CrudState(rx.State):
         if page_size.isdigit():
             self.page_size = int(page_size)
 
+    @rx.event
+    def set_filter_column(self, col: str):
+        self.filter_column = col
+
+    @rx.event
+    def set_filter_value(self, value: str):
+        self.filter_value = value
+
+    @rx.event
+    def set_filter_operator(self, op: str):
+        self.filter_operator = op
+
+    @rx.event
+    def set_order_column(self, column: str):
+        self.order_column = column
+
+    @rx.event
+    def set_order_direction(self, direction: str):
+        self.order_direction = direction
+
     @rx.var
     def columns(self) -> list[str]:
         """Extrai os nomes das colunas do primeiro registro."""
@@ -33,8 +64,26 @@ class CrudState(rx.State):
         
 
     async def load_data(self):
-        rows = get_table_info(self.table, page=self.page, page_size=self.page_size)
-        self.data = [dict(r) for r in rows]  # converte Row para dict
+        filters = {}
+        if self.filter_column and self.filter_value:
+            filters[self.filter_column] = {
+                "op": self.filter_operator,
+                "value": self.filter_value,
+            }
+        
+        order_by = None
+        if self.order_column:
+            order_by = f"{self.order_column} {self.order_direction}"
+
+        rows = get_table_info(
+            self.table,
+            page=self.page,
+            page_size=self.page_size,
+            filters=filters,
+            order_by=order_by,
+        )
+        self.data = [dict(r) for r in rows]
+
 
     async def add_record(self, data: dict):
         table = get_table_by_name(self.table)
@@ -91,7 +140,10 @@ def crud_page():
             ]
         ),
         # tamanho da página
-        rx.input(
+        rx.hstack(
+            rx.text("Número da página:"),
+            rx.input(
+            title="Número da Página",
             placeholder="Page Number",
             type="number",
             value=CrudState.page,
@@ -99,8 +151,13 @@ def crud_page():
                 CrudState.set_page_number,
                 CrudState.load_data()
             ]
+        )
         ),
-        rx.input(
+        # itens por página
+        rx.hstack(
+            rx.text("Registros por página:"),
+            rx.input(
+            title="Itens por Página",
             placeholder="Page Size",
             type="number",
             value=CrudState.page_size,
@@ -109,6 +166,50 @@ def crud_page():
                 CrudState.load_data()
             ]
         ),
+        ),
+        # filtro
+        rx.hstack(
+            rx.text("Filtro:"),
+            rx.select(
+                CrudState.columns,
+                placeholder="Coluna",
+                value=CrudState.filter_column,
+                on_change=CrudState.set_filter_column,
+            ),
+            rx.select(
+                ["=", "!=", ">", "<", ">=", "<=", "LIKE"],
+                value=CrudState.filter_operator,
+                on_change=CrudState.set_filter_operator,
+            ),
+            rx.input(
+                placeholder="Digite o valor",
+                type="text",
+                value=CrudState.filter_value,
+                on_change=CrudState.set_filter_value,
+                on_blur=CrudState.load_data
+            ),
+        ),
+
+        # order by
+        rx.hstack(
+            rx.text("Ordenar por:"),
+            rx.select(
+                CrudState.columns,
+                placeholder="Coluna",
+                value=CrudState.order_column,
+                on_change=CrudState.set_order_column
+            ),
+            rx.select(
+                ["ASC", "DESC"],
+                placeholder="Direção",
+                value=CrudState.order_direction,
+                on_change=[
+                    CrudState.set_order_direction,
+                    CrudState.load_data()
+                ]
+            ),
+        ),
+        # tabela com dados
         crud_table()
     )
 

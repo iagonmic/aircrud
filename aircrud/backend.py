@@ -18,15 +18,35 @@ def create_record(table, data: dict):
         return result.inserted_primary_key
 
 
-def query_builder(table, filters=None, order_by=None, group_by=None,
+def query_builder(table, filters={}, order_by=None, group_by=None,
                   page: int = 1, page_size: int = 10, aggregates=None):
     stmt = select(table)
 
     # Filtros dinâmicos
     if filters:
-        for col, val in filters.items():
+        for col, condition in filters.items():
             if hasattr(table.c, col):
-                stmt = stmt.where(getattr(table.c, col) == val)
+                value = condition["value"]
+                operator = condition["op"]
+
+                column = getattr(table.c, col)
+
+                if operator == "=":
+                    stmt = stmt.where(column == value)
+                elif operator == "!=":
+                    stmt = stmt.where(column != value)
+                elif operator == ">":
+                    stmt = stmt.where(column > value)
+                elif operator == "<":
+                    stmt = stmt.where(column < value)
+                elif operator == ">=":
+                    stmt = stmt.where(column >= value)
+                elif operator == "<=":
+                    stmt = stmt.where(column <= value)
+                elif operator == "LIKE":
+                    stmt = stmt.where(column.like(f"%{value}%"))
+
+
 
     # Agregações + group by
     if aggregates:
@@ -41,9 +61,18 @@ def query_builder(table, filters=None, order_by=None, group_by=None,
     # Ordenação
     if order_by:
         if isinstance(order_by, list):
-            stmt = stmt.order_by(*[getattr(table.c, col) for col in order_by])
+            stmt = stmt.order_by(*[
+                getattr(table.c, col.split()[0]).desc() if col.endswith("DESC") else getattr(table.c, col.split()[0]).asc()
+                for col in order_by
+            ])
         else:
-            stmt = stmt.order_by(getattr(table.c, order_by))
+            col, *direction = order_by.split()
+            column = getattr(table.c, col)
+            if direction and direction[0].upper() == "DESC":
+                stmt = stmt.order_by(column.desc())
+            else:
+                stmt = stmt.order_by(column.asc())
+
 
     # exemplo: host_results = query_table("host", order_by=['RoomsRent'])
 
