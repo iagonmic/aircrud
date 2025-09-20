@@ -126,11 +126,28 @@ def insert_form():
                     name=col
                 )
             ),
-            rx.button("Inserir Dados", type="submit")
+            rx.button("Inserir Dados", type="submit", color_scheme='pink')
         ),
         on_submit=CrudState.handle_insert,
         reset_on_submit=True,
     )
+
+'''def edit_form():
+    return rx.form(
+        rx.vstack(
+            rx.foreach(
+                CrudState.form_columns,
+                lambda col: rx.input(
+                    placeholder=col,
+                    name=col,
+                    value=CrudState.form_data.get(col, ""),
+                ),
+            ),
+            rx.button("💾 Salvar Alterações", type="submit", color_scheme="pink"),
+        ),
+        on_submit=CrudState.handle_insert,
+        reset_on_submit=True,
+    )'''
     
 def crud_table():
     return rx.table.root(
@@ -140,7 +157,9 @@ def crud_table():
                 rx.foreach(
                     CrudState.columns,
                     lambda col: rx.table.column_header_cell(col)
-                )
+                ),
+                # coluna para as ações de editar e deletar
+                rx.table.column_header_cell('Ações')
             )
         ),
         # Corpo da tabela
@@ -151,7 +170,25 @@ def crud_table():
                     rx.foreach(
                         CrudState.columns,
                         lambda col: rx.table.cell(row[col])
-                    )
+                    ),
+                    #ações
+                    rx.table.cell(
+                        rx.hstack(
+                            rx.button(
+                                "✏️ Editar",
+                                size="1",
+                                color_scheme="blue",
+                                #on_click=lambda: CrudState.open_update_form(row),
+                            ),
+                            rx.button(
+                                "🗑️ Deletar",
+                                size="1",
+                                color_scheme="red",
+                                #on_click=lambda: CrudState.open_delete_dialog(row),
+                            ),
+                            spacing='2'
+                        )
+                    ),
                 )
             )
         ),
@@ -159,104 +196,181 @@ def crud_table():
     )
 
 def crud_page():
-    return rx.vstack(
-        rx.heading("CRUD Dinâmico"),
+    return rx.center(
+        rx.vstack(
+            rx.heading("AirCRUD 🏨", size='6', margin_bottom='20px'),
 
-        # seletor de tabela
-        rx.select(
-            [table_name for table_name in get_available_table_names()],
-            value=CrudState.table,
-            on_change=[
-                CrudState.change_table,
-                CrudState.load_data()
-            ]
-        ),
-        # tamanho da página
-        rx.hstack(
-            rx.text("Número da página:"),
-            rx.input(
-            title="Número da Página",
-            placeholder="Page Number",
-            type="number",
-            value=CrudState.page,
-            on_change=[
-                CrudState.set_page_number,
-                CrudState.load_data()
-            ]
-        )
-        ),
-        # itens por página
-        rx.hstack(
-            rx.text("Registros por página:"),
-            rx.input(
-            title="Itens por Página",
-            placeholder="Page Size",
-            type="number",
-            value=CrudState.page_size,
-            on_change=[
-                CrudState.set_page_size,
-                CrudState.load_data()
-            ]
-        ),
-        ),
-        # filtro
-        rx.hstack(
-            rx.text("Filtro:"),
-            rx.select(
-                CrudState.columns,
-                placeholder="Coluna",
-                value=CrudState.filter_column,
-                on_change=CrudState.set_filter_column,
+            # seletor de tabela
+            rx.hstack(
+                rx.text('Tabela:',weight='bold'),
+                rx.select(
+                    [table_name for table_name in get_available_table_names()],
+                    value=CrudState.table,
+                    on_change=[
+                        CrudState.change_table,
+                        CrudState.load_data()
+                    ],
+                    width='200px'
+                ),
             ),
-            rx.select(
-                ["=", "!=", ">", "<", ">=", "<=", "LIKE"],
-                value=CrudState.filter_operator,
-                on_change=CrudState.set_filter_operator,
+            
+            # tamanho da página
+            rx.hstack(
+                rx.text("Número da página:"),
+                rx.input(
+                    title="Número da Página",
+                    placeholder="Page Number",
+                    type="number",
+                    value=CrudState.page,
+                    on_change=[
+                        CrudState.set_page_number,
+                        CrudState.load_data()
+                    ],
+                    width='100px'
+                ),
+                spacing='4'
             ),
-            rx.input(
-                placeholder="Digite o valor",
-                type="text",
-                value=CrudState.filter_value,
-                on_change=CrudState.set_filter_value,
-                on_blur=CrudState.load_data
+            # itens por página
+            rx.hstack(
+                rx.text("Registros por página:"),
+                rx.input(
+                    title="Itens por Página",
+                    placeholder="Page Size",
+                    type="number",
+                    value=CrudState.page_size,
+                    on_change=[
+                        CrudState.set_page_size,
+                        CrudState.load_data()
+                    ],
+                    width='100px'
+                ),
+                spacing='4'
             ),
-        ),
+            # filtro
+            rx.box(
+                rx.hstack(
+                    rx.text("Filtro:", weight='bold'),
+                    rx.select(
+                        CrudState.columns,
+                        placeholder="Coluna",
+                        value=CrudState.filter_column,
+                        on_change=CrudState.set_filter_column,
+                        width='150px',
+                    ),
+                    rx.select(
+                        ["=", "!=", ">", "<", ">=", "<=", "LIKE"],
+                        value=CrudState.filter_operator,
+                        on_change=CrudState.set_filter_operator,
+                        width='100px'
+                    ),
+                    rx.input(
+                        placeholder="Digite o valor",
+                        type="text",
+                        value=CrudState.filter_value,
+                        on_change=CrudState.set_filter_value,
+                        on_blur=CrudState.load_data,
+                        width='200px'
+                    ),
+                    spacing='4'
+                ),
+                padding="10px",
+                border="1px solid #202020",
+                border_radius="8px",
+                shadow="sm",
+                margin_y="10px",
+                width="100%",
+            ),
 
-        # order by
-        rx.hstack(
-            rx.text("Ordenar por:"),
-            rx.select(
-                CrudState.columns,
-                placeholder="Coluna",
-                value=CrudState.order_column,
-                on_change=CrudState.set_order_column
+            # order by
+            rx.hstack(
+                rx.text("Ordenar por:", weight='bold'),
+                rx.select(
+                    CrudState.columns,
+                    placeholder="Coluna",
+                    value=CrudState.order_column,
+                    on_change=CrudState.set_order_column,
+                    width='150px'
+                ),
+                rx.select(
+                    ["ASC", "DESC"],
+                    placeholder="Direção",
+                    value=CrudState.order_direction,
+                    on_change=[
+                        CrudState.set_order_direction,
+                        CrudState.load_data()
+                    ],
+                    width='100px'
+                ),
+                spacing='4'
             ),
-            rx.select(
-                ["ASC", "DESC"],
-                placeholder="Direção",
-                value=CrudState.order_direction,
-                on_change=[
-                    CrudState.set_order_direction,
-                    CrudState.load_data()
-                ]
+            # inserir dados
+            rx.button(
+                "✙ Inserir Registro",
+                on_click=CrudState.toggle_insert_popup,
+                margin_top='15px',
+                color_scheme='pink'
             ),
-        ),
-        # inserir dados
-        rx.button(
-            "Inserir Registro",
-            on_click=CrudState.toggle_insert_popup,
-        ),
-        rx.dialog.root(
-            rx.dialog.trigger(rx.text("")),
-            rx.dialog.content(
-                rx.dialog.title("Inserir Novo Registro"),
-                insert_form(),
-                rx.dialog.close(rx.button("Fechar")),
+            rx.dialog.root(
+                rx.dialog.trigger(rx.text("")),
+                rx.dialog.content(
+                    rx.dialog.title("Inserir Novo Registro"),
+                    insert_form(),
+                    rx.dialog.close(rx.button("Fechar", color_scheme='red', margin_top='10px')),
+                ),
+                open=CrudState.show_insert_popup,
+                on_open_change=CrudState.toggle_insert_popup,
             ),
-            open=CrudState.show_insert_popup,
-            on_open_change=CrudState.toggle_insert_popup,
+            # tabela com dados
+            rx.box(
+                crud_table(),
+                margin_top='20px',
+                padding="15px",
+                border="1px solid #202020",
+                border_radius="10px",
+                shadow="sm",
+                width="100%",
+            ),
+            spacing="5",
+            width="80%",
+            max_width="900px",
         ),
-        # tabela com dados
-        crud_table()
-    )
+        padding="30px",
+        bg="#121212",
+        min_height="100vh",
+)
 
+#popup de editar
+'''rx.dialog.root(
+                rx.dialog.trigger(rx.text('')),
+                rx.dialog.content(
+                    rx.dialog.title('Editar Registro'),
+                    #edit_form(),
+                    rx.dialog.close(
+                        rx.button('Cancelar', color_scheme='red', margin_top='10px')
+                    ),
+                ),
+                #open=CrudState.show_form,
+                on_open_change=CrudState.close_form,
+            ),
+            #popup delete
+            rx.dialog.root(
+                rx.dialog.trigger(rx.text("")),
+                rx.dialog.content(
+                rx.dialog.title("Confirmar Exclusão"),
+                rx.text("Tem certeza que deseja excluir este registro?"),
+                rx.hstack(
+                    rx.dialog.close(
+                        rx.button("Cancelar", color_scheme="gray"),
+                    ),
+                    rx.button(
+                        "🗑️ Excluir",
+                        color_scheme="red",
+                        on_click=CrudState.confirm_delete,
+                    ),
+                    spacing="3",
+                    margin_top="10px",
+                ),
+            ),
+            open=CrudState.show_delete_dialog,
+            on_open_change=CrudState.close_delete_dialog,
+            ),'''

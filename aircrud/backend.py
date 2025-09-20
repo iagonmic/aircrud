@@ -3,7 +3,8 @@ import os
 from sqlalchemy import create_engine, MetaData, Table, func, select, insert, update, delete
 
 load_dotenv()
-engine = create_engine("mysql+pymysql://root:" + os.getenv("password") + "@127.0.0.1/aircrud")
+#engine = create_engine("mysql+pymysql://root:" + os.getenv("password") + "@127.0.0.1/aircrud")
+engine = create_engine("mysql+pymysql://root:" + os.getenv("password") + "@127.0.0.1/crud") # meu bd ta com nome crud
 metadata = MetaData()
 metadata.reflect(bind=engine)
 

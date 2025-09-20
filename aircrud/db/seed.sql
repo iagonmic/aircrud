@@ -32,6 +32,10 @@ JOIN Location loc ON l.Country = loc.Country
                   AND l.Neighbourhood = loc.Neighbourhood;
 
 -- Review
+UPDATE air_bnb_listings
+SET LastReviewDate = NULL
+WHERE LastReviewDate = '';
+
 INSERT INTO Review (RoomID, NumberOfReviews, LastReviewDate, ReviewsPerMonth)
 SELECT 
     r.RoomID,
@@ -42,6 +46,10 @@ FROM air_bnb_listings l
 JOIN Room r on r.Coordinates = l.Coordinates;
 
 -- UpdateRoom
+UPDATE air_bnb_listings
+SET Updated_Date = NULL
+WHERE Updated_Date  = '';
+
 INSERT INTO UpdateRoom (RoomID, UpdateDate)
 SELECT r.RoomID, l.`Updated Date`
 FROM air_bnb_listings l
