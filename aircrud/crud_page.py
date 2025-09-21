@@ -14,6 +14,11 @@ class CrudState(rx.State):
     insert_data: dict = {}
     show_insert_popup: bool = False
     form_columns: list[str] = []
+    is_editing: bool = False
+    form_data: dict = {}
+    show_form: bool = False
+    item_to_delete: dict | None = None
+    show_delete_dialog: bool = False
 
     @rx.event
     def change_table(self, table: str):
@@ -77,6 +82,46 @@ class CrudState(rx.State):
     def set_order_direction(self, direction: str):
         self.order_direction = direction
 
+    # ações update
+    @rx.event
+    def open_update_form(self, item: dict):
+        self.is_editing = True
+        self.form_data = item.copy()
+        self.show_form = True
+        
+    @rx.event
+    def close_form(self):
+        self.show_form = False
+        self.is_editing = False
+        self.form_data = {}
+    
+    @rx.event
+    def save_item(self, data: dict):
+        if self.is_editing:
+            record_id = self.form_data.get("id")
+            if record_id:
+                update_record(self.table, record_id, data)
+        else:
+            create_record(self.table, data)
+        return [CrudState.load_data, CrudState.close_form]
+    
+    # ações delete
+    @rx.event
+    def open_delete_dialog(self, item: dict):
+        self.item_to_delete = item
+        self.show_delete_dialog = True
+
+    @rx.event
+    def close_delete_dialog(self):
+        self.show_delete_dialog = False
+        self.item_to_delete = None
+
+    @rx.event
+    def confirm_delete(self):
+        if self.item_to_delete and "id" in self.item_to_delete:
+            delete_record(self.table, self.item_to_delete["id"])
+        return [CrudState.load_data, CrudState.close_delete_dialog]
+
     @rx.var
     def columns(self) -> list[str]:
         """Extrai os nomes das colunas do primeiro registro."""
@@ -132,7 +177,7 @@ def insert_form():
         reset_on_submit=True,
     )
 
-'''def edit_form():
+def edit_form():
     return rx.form(
         rx.vstack(
             rx.foreach(
@@ -145,9 +190,8 @@ def insert_form():
             ),
             rx.button("💾 Salvar Alterações", type="submit", color_scheme="pink"),
         ),
-        on_submit=CrudState.handle_insert,
-        reset_on_submit=True,
-    )'''
+        on_submit=CrudState.save_item(),
+    )
     
 def crud_table():
     return rx.table.root(
@@ -178,13 +222,13 @@ def crud_table():
                                 "✏️ Editar",
                                 size="1",
                                 color_scheme="blue",
-                                #on_click=lambda: CrudState.open_update_form(row),
+                                on_click=lambda: CrudState.open_update_form(row),
                             ),
                             rx.button(
                                 "🗑️ Deletar",
                                 size="1",
                                 color_scheme="red",
-                                #on_click=lambda: CrudState.open_delete_dialog(row),
+                                on_click=lambda: CrudState.open_delete_dialog(row),
                             ),
                             spacing='2'
                         )
@@ -310,16 +354,6 @@ def crud_page():
                 margin_top='15px',
                 color_scheme='pink'
             ),
-            rx.dialog.root(
-                rx.dialog.trigger(rx.text("")),
-                rx.dialog.content(
-                    rx.dialog.title("Inserir Novo Registro"),
-                    insert_form(),
-                    rx.dialog.close(rx.button("Fechar", color_scheme='red', margin_top='10px')),
-                ),
-                open=CrudState.show_insert_popup,
-                on_open_change=CrudState.toggle_insert_popup,
-            ),
             # tabela com dados
             rx.box(
                 crud_table(),
@@ -330,6 +364,53 @@ def crud_page():
                 shadow="sm",
                 width="100%",
             ),
+            # popups
+            #insert
+            rx.dialog.root(
+                rx.dialog.trigger(rx.text("")),
+                rx.dialog.content(
+                    rx.dialog.title("Inserir Novo Registro"),
+                    insert_form(),
+                    rx.dialog.close(rx.button("Fechar", color_scheme='red', margin_top='10px')),
+                ),
+                open=CrudState.show_insert_popup,
+                on_open_change=CrudState.toggle_insert_popup,
+            ),
+            # update
+            rx.dialog.root(
+                rx.dialog.trigger(rx.text("")), 
+                rx.dialog.content(
+                    rx.dialog.title("Editar Registro"),
+                    edit_form(),
+                    rx.dialog.close(
+                        rx.button("Cancelar", color_scheme="red", margin_top="10px")
+                    ),
+                ),
+                open=CrudState.show_form,
+                on_open_change=CrudState.close_form,
+            ),
+            # delete
+            rx.dialog.root(
+                rx.dialog.trigger(rx.text("")),
+                rx.dialog.content(
+                    rx.dialog.title("Confirmar Exclusão"),
+                    rx.text("Tem certeza que deseja excluir este registro?"),
+                    rx.hstack(
+                        rx.dialog.close(
+                            rx.button("Cancelar", color_scheme="gray"),
+                        ),
+                        rx.button(
+                            "🗑️ Excluir",
+                            color_scheme="red",
+                            on_click=CrudState.confirm_delete,
+                        ),
+                        spacing="3",
+                        margin_top="10px",
+                    ),
+                ),
+                open=CrudState.show_delete_dialog,
+                on_open_change=CrudState.close_delete_dialog,
+            ),
             spacing="5",
             width="80%",
             max_width="900px",
@@ -338,39 +419,3 @@ def crud_page():
         bg="#121212",
         min_height="100vh",
 )
-
-#popup de editar
-'''rx.dialog.root(
-                rx.dialog.trigger(rx.text('')),
-                rx.dialog.content(
-                    rx.dialog.title('Editar Registro'),
-                    #edit_form(),
-                    rx.dialog.close(
-                        rx.button('Cancelar', color_scheme='red', margin_top='10px')
-                    ),
-                ),
-                #open=CrudState.show_form,
-                on_open_change=CrudState.close_form,
-            ),
-            #popup delete
-            rx.dialog.root(
-                rx.dialog.trigger(rx.text("")),
-                rx.dialog.content(
-                rx.dialog.title("Confirmar Exclusão"),
-                rx.text("Tem certeza que deseja excluir este registro?"),
-                rx.hstack(
-                    rx.dialog.close(
-                        rx.button("Cancelar", color_scheme="gray"),
-                    ),
-                    rx.button(
-                        "🗑️ Excluir",
-                        color_scheme="red",
-                        on_click=CrudState.confirm_delete,
-                    ),
-                    spacing="3",
-                    margin_top="10px",
-                ),
-            ),
-            open=CrudState.show_delete_dialog,
-            on_open_change=CrudState.close_delete_dialog,
-            ),'''
