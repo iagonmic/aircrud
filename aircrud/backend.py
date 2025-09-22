@@ -86,6 +86,8 @@ def query_builder(table, filters={}, order_by=None, group_by=None,
     
 def update_record(table, record_id, data: dict):
     pk = get_pk_column_name(table)
+    data = sanitize_data(table, data)  # <- limpa antes de salvar
+    
     stmt = (
         update(table)
         .where(getattr(table.c, pk) == record_id)
@@ -93,7 +95,8 @@ def update_record(table, record_id, data: dict):
     )
     with engine.begin() as conn:
         result = conn.execute(stmt)
-        return result.rowcount  # número de linhas afetadas
+        return result.rowcount
+
     
 def delete_record(table, record_id):
     pk = get_pk_column_name(table)
@@ -116,8 +119,30 @@ def get_table_by_name(table_name):
 
 def get_pk_column_name(table):
     return table.primary_key.columns.keys()[0]
-    
 
 def get_non_pk_fk_columns(table_name: str) -> list[str]:
     table = get_table_by_name(table_name)
     return [col.name for col in table.columns if not col.primary_key and not col.foreign_keys]
+
+def sanitize_data(table, data: dict):
+    """
+    Converte valores vindos do frontend para tipos corretos.
+    Transforma '' em None, e faz cast quando possível.
+    """
+    cleaned = {}
+    for col in table.c:  # pega colunas do SQLAlchemy
+        if col.name in data:
+            val = data[col.name]
+            if val == '':
+                cleaned[col.name] = None
+            else:
+                try:
+                    # tenta converter para o tipo correto
+                    if hasattr(col.type, "python_type"):
+                        cleaned[col.name] = col.type.python_type(val)
+                    else:
+                        cleaned[col.name] = val
+                except Exception:
+                    cleaned[col.name] = val  # fallback se não converter
+    return cleaned
+

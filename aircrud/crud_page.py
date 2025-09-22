@@ -87,7 +87,6 @@ class CrudState(rx.State):
     def open_update_form(self, item: dict):
         self.is_editing = True
         self.form_data = item.copy()
-        print(self.form_data)
         self.show_form = True
         
     @rx.event
@@ -101,7 +100,7 @@ class CrudState(rx.State):
         if self.is_editing:
             record_id = get_primary_key(self.form_data)
             if record_id:
-                update_record(self.table, record_id, data)
+                update_record(get_table_by_name(self.table), record_id, data)
         else:
             create_record(self.table, data)
         return [CrudState.load_data, CrudState.close_form]
@@ -109,7 +108,7 @@ class CrudState(rx.State):
     # ações delete
     @rx.event
     def open_delete_dialog(self, item: dict):
-        self.item_to_delete = item
+        self.item_to_delete = item.copy()
         self.show_delete_dialog = True
 
     @rx.event
@@ -119,8 +118,8 @@ class CrudState(rx.State):
 
     @rx.event
     def confirm_delete(self):
-        if self.item_to_delete and "id" in self.item_to_delete:
-            delete_record(self.table, self.item_to_delete["id"])
+        if self.item_to_delete and get_primary_key(self.item_to_delete):
+            delete_record(get_table_by_name(self.table), get_primary_key(self.item_to_delete))
         return [CrudState.load_data, CrudState.close_delete_dialog]
 
     @rx.var
@@ -152,16 +151,6 @@ class CrudState(rx.State):
         )
         self.data = [dict(r) for r in rows]
 
-    async def edit_record(self, record_id: int, data: dict):
-        table = get_table_by_name(self.table)
-        update_record(table, record_id, data)
-        await self.load_data()
-
-    async def remove_record(self, record_id: int):
-        table = get_table_by_name(self.table)
-        delete_record(table, record_id)
-        await self.load_data()
-
 def insert_form():
     return rx.form(
         rx.vstack(
@@ -192,6 +181,7 @@ def edit_form():
                 lambda col: rx.input(
                     placeholder=col,
                     name=col,
+                    default_value=CrudState.form_data.get(col, "")
                 ),
             ),
             rx.button("💾 Salvar Alterações", type="submit", color_scheme="pink"),
