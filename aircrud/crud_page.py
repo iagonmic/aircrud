@@ -87,6 +87,7 @@ class CrudState(rx.State):
     def open_update_form(self, item: dict):
         self.is_editing = True
         self.form_data = item.copy()
+        print(self.form_data)
         self.show_form = True
         
     @rx.event
@@ -98,7 +99,7 @@ class CrudState(rx.State):
     @rx.event
     def save_item(self, data: dict):
         if self.is_editing:
-            record_id = self.form_data.get("id")
+            record_id = get_primary_key(self.form_data)
             if record_id:
                 update_record(self.table, record_id, data)
         else:
@@ -177,6 +178,12 @@ def insert_form():
         reset_on_submit=True,
     )
 
+def get_primary_key(d):
+    for key in d:
+        if "ID" in key:  # verifica se contém "ID"
+            return d[key]  # retorna o valor
+    return None, None  # caso não tenha nenhuma chave com "ID"
+
 def edit_form():
     return rx.form(
         rx.vstack(
@@ -185,7 +192,6 @@ def edit_form():
                 lambda col: rx.input(
                     placeholder=col,
                     name=col,
-                    value=CrudState.form_data.get(col, ""),
                 ),
             ),
             rx.button("💾 Salvar Alterações", type="submit", color_scheme="pink"),
@@ -243,53 +249,62 @@ def crud_page():
     return rx.center(
         rx.vstack(
             rx.heading("AirCRUD 🏨", size='6', margin_bottom='20px'),
-
-            # seletor de tabela
-            rx.hstack(
-                rx.text('Tabela:',weight='bold'),
-                rx.select(
-                    [table_name for table_name in get_available_table_names()],
-                    value=CrudState.table,
-                    on_change=[
-                        CrudState.change_table,
-                        CrudState.load_data()
-                    ],
-                    width='200px'
+            rx.box(
+                rx.hstack(                
+                # seletor de tabela
+                rx.hstack(
+                    rx.text('Tabela:',weight='bold'),
+                    rx.select(
+                        [table_name for table_name in get_available_table_names()],
+                        value=CrudState.table,
+                        on_change=[
+                            CrudState.change_table,
+                            CrudState.load_data()
+                        ],
+                        width='200px'
+                    ),
                 ),
+                
+                # tamanho da página
+                rx.hstack(
+                    rx.text("Número da página:"),
+                    rx.input(
+                        title="Número da Página",
+                        placeholder="Page Number",
+                        type="number",
+                        value=CrudState.page,
+                        on_change=[
+                            CrudState.set_page_number,
+                            CrudState.load_data()
+                        ],
+                        width='100px'
+                    ),
+                    spacing='4'
+                ),
+                # itens por página
+                rx.hstack(
+                    rx.text("Registros por página:"),
+                    rx.input(
+                        title="Itens por Página",
+                        placeholder="Page Size",
+                        type="number",
+                        value=CrudState.page_size,
+                        on_change=[
+                            CrudState.set_page_size,
+                            CrudState.load_data()
+                        ],
+                        width='100px'
+                    ),
+                    spacing='4'
+                )
+            ),
+            padding="10px",
+            border="1px solid #202020",
+            border_radius="8px",
+            shadow="sm",
+            width="100%",
             ),
             
-            # tamanho da página
-            rx.hstack(
-                rx.text("Número da página:"),
-                rx.input(
-                    title="Número da Página",
-                    placeholder="Page Number",
-                    type="number",
-                    value=CrudState.page,
-                    on_change=[
-                        CrudState.set_page_number,
-                        CrudState.load_data()
-                    ],
-                    width='100px'
-                ),
-                spacing='4'
-            ),
-            # itens por página
-            rx.hstack(
-                rx.text("Registros por página:"),
-                rx.input(
-                    title="Itens por Página",
-                    placeholder="Page Size",
-                    type="number",
-                    value=CrudState.page_size,
-                    on_change=[
-                        CrudState.set_page_size,
-                        CrudState.load_data()
-                    ],
-                    width='100px'
-                ),
-                spacing='4'
-            ),
             # filtro
             rx.box(
                 rx.hstack(
@@ -321,12 +336,11 @@ def crud_page():
                 border="1px solid #202020",
                 border_radius="8px",
                 shadow="sm",
-                margin_y="10px",
                 width="100%",
             ),
-
             # order by
-            rx.hstack(
+            rx.box(
+                rx.hstack(
                 rx.text("Ordenar por:", weight='bold'),
                 rx.select(
                     CrudState.columns,
@@ -346,6 +360,12 @@ def crud_page():
                     width='100px'
                 ),
                 spacing='4'
+            ),
+            padding="10px",
+            border="1px solid #202020",
+            border_radius="8px",
+            shadow="sm",
+            width="100%"
             ),
             # inserir dados
             rx.button(
