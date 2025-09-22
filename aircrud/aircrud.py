@@ -43,7 +43,7 @@ def index() -> rx.Component:
             rx.el.button(
                 "Clique aqui para iniciar",
                 on_click=rx.redirect("/crud"),
-                class_name="mt-4 py-4 px-8 bg-[#FF5A60] text-white rounded-lg hover:bg-[#CC484C] focus:outline-none focus:shadow-none",
+                class_name="mt-4 py-4 px-8 bg-[#F76B15] text-white rounded-lg hover:bg-[#D35D14] focus:outline-none focus:shadow-none",
             ),
             class_name="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 p-8 rounded-2xl shadow-lg text-center z-[1001]",
         ),

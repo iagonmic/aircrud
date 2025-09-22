@@ -161,7 +161,7 @@ def insert_form():
                     name=col
                 )
             ),
-            rx.button("Inserir Dados", type="submit", color_scheme='pink')
+            rx.button("Inserir Dados", type="submit", color_scheme='orange')
         ),
         on_submit=CrudState.handle_insert,
         reset_on_submit=True,
@@ -184,7 +184,7 @@ def edit_form():
                     default_value=CrudState.form_data.get(col, "")
                 ),
             ),
-            rx.button("💾 Salvar Alterações", type="submit", color_scheme="pink"),
+            rx.button("💾 Salvar Alterações", type="submit", color_scheme='orange'),
         ),
         on_submit=CrudState.save_item(),
     )
@@ -217,13 +217,13 @@ def crud_table():
                             rx.button(
                                 "✏️ Editar",
                                 size="1",
-                                color_scheme="blue",
+                                color_scheme='orange',
                                 on_click=lambda: CrudState.open_update_form(row),
                             ),
                             rx.button(
                                 "🗑️ Deletar",
                                 size="1",
-                                color_scheme="red",
+                                color_scheme='gray',
                                 on_click=lambda: CrudState.open_delete_dialog(row),
                             ),
                             spacing='2'
@@ -362,7 +362,7 @@ def crud_page():
                 "✙ Inserir Registro",
                 on_click=CrudState.toggle_insert_popup,
                 margin_top='15px',
-                color_scheme='pink'
+                color_scheme='orange'
             ),
             # tabela com dados
             rx.box(
